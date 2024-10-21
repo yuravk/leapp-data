@@ -81,12 +81,14 @@ jobs:
       fail-fast: false
       matrix:
         # Set distro+scenario matrix based on boolean inputs.* with true value
-        distro: ${{ fromJSON(format('["{0}", "{1}", "{2}", "{3}", "{4}"]', ( inputs.almalinux && 'almalinux' ), ( inputs.centos && 'centos' ), ( inputs.eurolinux && 'eurolinux' ), ( inputs.oraclelinux && 'oraclelinux' ), ( inputs.rocky && 'rocky' ) )) }}
+        distro: ${{ fromJSON(format('["{0}", "{1}", "{2}", "{3}", "{4}", "{5}"]', ( inputs.almalinux && 'almalinux' ), ( inputs.almalinux && 'scientific' ), ( inputs.centos && 'centos' ), ( inputs.eurolinux && 'eurolinux' ), ( inputs.oraclelinux && 'oraclelinux' ), ( inputs.rocky && 'rocky' ) )) }}
         scenario: ${{ fromJSON(format('["{0}", "{1}"]', ( inputs.to8 && '8' ), ( inputs.to9 && '9' ) )) }}
         exclude:
           - distro: 'false'
           - scenario: 'false'
           - distro: 'oraclelinux'
+            scenario: '9'
+          - distro: 'scientific'
             scenario: '9'
 
     env:
@@ -102,64 +104,75 @@ jobs:
 
     - name: Prepare some environment variables
       run: |
-        # Source and target systems releases
-        source_release=8
-        minor_version=${{ env.version9_minor }}
-        if [ "${{ matrix.scenario }}" = "8" ];then
-          source_release=7
-          minor_version=${{ env.version8_minor }}
-        fi
+        # Source and target systems
+        case ${{ matrix.scenario }} in
+          8)
+            variant=el7toel8
+            source_release=7
+            minor_version=${{ env.version8_minor }}
+            ;;
+          9)
+            variant=el8toel9
+            source_release=8
+            minor_version=${{ env.version9_minor }}
+            ;;
+        esac
+        target_distro=${{ matrix.distro }}
         target_release="${{ matrix.scenario }}.${minor_version}"
 
         # Target system release file, string and Vagrant image
         release_file=/etc/${{ matrix.distro }}-release
         case ${{ matrix.distro }} in
-          almalinux )
-            vm_box='almalinux/8'
+          almalinux|scientific )
+            vm_box=almalinux/${source_release}
+            target_distro=almalinux
             target_release_string="AlmaLinux release ${target_release}"
+            release_file=/etc/almalinux-release
             ;;
           centos )
-            vm_box='eurolinux-vagrant/centos-stream-8' # 'generic/centos8s'
+            vm_box=eurolinux-vagrant/centos-stream-${source_release} # generic/centos8s
             target_release_string="CentOS Stream release ${{ matrix.scenario }}"
             target_release=${{ matrix.scenario }}
             ;;
           eurolinux )
-            vm_box='eurolinux-vagrant/eurolinux-8'
+            vm_box=eurolinux-vagrant/eurolinux-${source_release}
             target_release_string="EuroLinux release ${target_release}"
             release_file=/etc/el-release
             ;;
           oraclelinux )
-            vm_box='eurolinux-vagrant/oracle-linux-8' # 'generic/oracle8'
+            vm_box=eurolinux-vagrant/oracle-linux-${source_release} # generic/oracle8
             target_release_string="Oracle Linux Server release ${target_release}"
             release_file=/etc/oracle-release
             ;;
           rocky )
-            vm_box='eurolinux-vagrant/rocky-8' # 'generic/rocky8'
+            vm_box=eurolinux-vagrant/rocky-${source_release} # generic/rocky8
             target_release_string="Rocky Linux release ${target_release}"
             ;;
         esac
-        [ "${{ matrix.scenario }}" = "8" ] && vm_box='centos/7' # 'eurolinux-vagrant/centos-7' 'generic/centos7'
+        if [ "${{ matrix.scenario }}" = "8" ]; then
+          vm_box=centos/${source_release} # eurolinux-vagrant/centos-7 generic/centos7
+          [ "${{ matrix.distro }}" = "scientific" ] && vm_box=eurolinux-vagrant/scientific-linux-${source_release}
+        fi
 
         echo "target_release_string=${target_release_string}" >> $GITHUB_ENV
         echo "release_file=${release_file}" >> $GITHUB_ENV
         echo "source_release=${source_release}" >> $GITHUB_ENV
         echo "target_release=${target_release}" >> $GITHUB_ENV
+        echo "target_distro=${target_distro}" >> $GITHUB_ENV
 
         # Set Vagrant ENV variable for config.vm.box, copy config file
         echo "vm_box='${vm_box}'" > .env
         cp -av ci/Vagrant/Vagrantfile ./
 
         # Leapp packages
-        variant=el8toel9
-        [ "${{ matrix.scenario }}" = "8" ] && variant=el7toel8
         leapp_pkgs="leapp leapp-upgrade-${variant}"
-        [ "${{ inputs.leapp-data-git }}" = "false" ] && leapp_pkgs="${leapp_pkgs} leapp-data-${{ matrix.distro }}"
+        [ "${{ inputs.leapp-data-git }}" = "false" ] && leapp_pkgs="${leapp_pkgs} leapp-data-${target_distro}"
         echo "leapp_pkgs=${leapp_pkgs}" >> $GITHUB_ENV
 
         # leapp logs directory
         leapp_log_dir="/var/log/leapp"
-        [ "x${leapp_log_dir}" != "x" ] && echo "leapp_log_dir=${leapp_log_dir}" >> $GITHUB_ENV
-         mkdir -p .${leapp_log_dir}
+        echo "leapp_log_dir=${leapp_log_dir}" >> $GITHUB_ENV
+        mkdir -p .${leapp_log_dir}
 
     - name: Create ELevate.sh
       run: |
@@ -179,8 +192,15 @@ jobs:
         if [ "$phase" = "install" ]; then
           dnf -y -q install 'dnf-command(config-manager)'
 
-          source_distro=almalinux-$(rpm -E %rhel)
-          [ "${{ matrix.scenario }}" = "8" ] && source_distro=centos$(rpm -E %rhel)
+          case ${{ matrix.scenario }} in
+            8)
+              source_distro=centos${{ env.source_release }}
+              ;;
+            9)
+              source_distro=almalinux-${{ env.source_release }}
+              ;;
+          esac
+
           case "${{ inputs.repository }}" in
             "stable (ALBS product)")
               echo "[Debug] 'stable (ALBS product)' repository";
@@ -200,7 +220,7 @@ jobs:
               ;;
             "NG (ALBS product)")
               echo "[Debug] 'NG (ALBS product)' repository";
-              curl -o /etc/yum.repos.d/elevate-ng.repo https://repo.almalinux.org/elevate/testing/elevate-ng-el$(rpm -E %rhel).repo
+              curl -o /etc/yum.repos.d/elevate-ng.repo https://repo.almalinux.org/elevate/testing/elevate-ng-el${{ env.source_release }}.repo
               ;;
           esac
 
@@ -223,6 +243,8 @@ jobs:
               lsmod | grep pata_acpi >/dev/null 2>&1 && rmmod pata_acpi;
               lsmod | grep floppy >/dev/null 2>&1 && rmmod floppy;
               sed -i 's/^.*PermitRootLogin.*$/PermitRootLogin yes # inhibited/g' /etc/ssh/sshd_config;
+              # TODO: ScientificLinux workaround to install almalinux-release package
+              [ "${{ matrix.distro }}" = "scientific" ] && rm -rf /usr/share/redhat-release /usr/share/doc/redhat-release
               leapp answer --section remove_pam_pkcs11_module_check.confirm=True;
               res=$?
               ;;
@@ -333,7 +355,7 @@ jobs:
           [ "${source_release}" = "8" ] && sudo dnf -y -q module disable postgresql
           [ "${source_release}" = "7" ] && sudo dnf -y -q install epel-release
           # TODO to mitigate "[Errno -1] repomd.xml signature could not be verified for pgdg-common"
-          sed -i 's/repo_gpgcheck \+= \+1/repo_gpgcheck=0/g' /etc/yum.repos.d/pgdg-redhat-all.repo
+          sed -i 's/repo_gpgcheck.*$/repo_gpgcheck=0/g' /etc/yum.repos.d/pgdg-redhat-all.repo
           sudo dnf install -y postgresql15-server
           res=$?
         fi
@@ -376,7 +398,7 @@ jobs:
         mkdir -p ${rpmbuild_topdir}/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
         # Prepare the package sources
-        read -r name version source <<< $(rpmspec --define 'dist_name ${{ matrix.distro }}' -P /vagrant/leapp-data.spec \
+        read -r name version source <<< $(rpmspec --define 'dist_name ${{ env.target_distro }}' -P /vagrant/leapp-data.spec \
         | awk '/^Name:/ {name=$2} /^Version:/ {version=$2} /^Source/ {source=$2} END {print name, version, source}')
 
         mkdir -p ${rpmbuild_topdir}/SOURCES/${name}-${version}
@@ -386,14 +408,14 @@ jobs:
         cd ${rpmbuild_topdir}/SOURCES/ && tar zcf ${source} ${name}-${version}
 
         # Build and install the package
-        rpmbuild -bb --without check --define 'dist_name ${{ matrix.distro }}' ${rpmbuild_topdir}/SPECS/leapp-data.spec
+        rpmbuild -bb --without check --define 'dist_name ${{ env.target_distro }}' ${rpmbuild_topdir}/SPECS/leapp-data.spec
         yum install -y ${rpmbuild_topdir}/RPMS/noarch/${name}-${version}*.noarch.rpm
 
         echo "[Debug] $(rpm -q ${name}-${version})"
 
         EOF
         chmod +x leapp-data-rpm.sh
-        
+
     - name: Install KVM and libvirt packages
       run: |
         sudo apt-get -y install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
@@ -430,7 +452,7 @@ jobs:
     - name: Run vagrant up
       id: vagrant-up
       run: |
-        sudo vagrant up elevatevm
+        sudo vagrant up --no-tty elevatevm
 
     - name: Print source system release
       run: |
@@ -455,14 +477,14 @@ jobs:
       if: inputs.leapp-data-git
       run: |
         sudo vagrant ssh elevatevm -c "sudo /vagrant/leapp-data-rpm.sh" || exit 1
-        leapp_data_version=$(sudo vagrant ssh elevatevm -c "sudo rpm -q --queryformat '%{VERSION}-%{RELEASE}' leapp-data-${{ matrix.distro }}" || exit 1)
-        echo "pkgs_versions=${{ env.pkgs_versions }}, 'leapp-data-${{ matrix.distro }} ${leapp_data_version} (${{ github.ref_name }})'" >> $GITHUB_ENV
+        leapp_data_version=$(sudo vagrant ssh elevatevm -c "sudo rpm -q --queryformat '%{VERSION}-%{RELEASE}' leapp-data-${{ env.target_distro }}" || exit 1)
+        echo "pkgs_versions=${{ env.pkgs_versions }}, 'leapp-data-${{ env.target_distro }} ${leapp_data_version} (${{ github.ref_name }})'" >> $GITHUB_ENV
 
     - name: Vendor - EPEL
-      if: inputs.vendors == 'all' && matrix.distro == 'almalinux'
+      if: inputs.vendors == 'all' && env.target_distro == 'almalinux'
       run: |
         sudo vagrant ssh elevatevm -c "sudo /vagrant/Verndors.sh epel ${{ env.source_release }}" || exit 1
-  
+
     - name: Vendor - KernelCare
       if: inputs.vendors == 'all'
       run: |

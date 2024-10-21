@@ -16,7 +16,10 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.provision "shell", inline: <<-SHELL
-        [ "$(rpm --eval %rhel)" = "7" ] && sudo curl -o /etc/yum.repos.d/CentOS-Base.repo https://el7.repo.almalinux.org/centos/CentOS-Base.repo
+        if [ "$(rpm --eval %rhel)" = "7" ]; then
+             grep -i centos /etc/redhat-release >/dev/null && sudo curl -o /etc/yum.repos.d/CentOS-Base.repo https://el7.repo.almalinux.org/centos/CentOS-Base.repo
+             grep -i scientific /etc/redhat-release >/dev/null && sed -i 's/\$slreleasever/7/g' /etc/yum.repos.d/*.repo
+        fi
         sudo yum -y -q install dnf
         sudo dnf -y -q update
     SHELL
