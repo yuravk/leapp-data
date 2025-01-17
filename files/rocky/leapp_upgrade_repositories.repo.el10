@@ -1,0 +1,71 @@
+[rocky10-baseos]
+name=Rocky Linux 10 - BaseOS
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/BaseOS/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-appstream]
+name=Rocky Linux 10 - AppStream
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/AppStream/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-crb]
+name=Rocky Linux 10 - CRB
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=CRB-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/CRB/$basearch/os/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-ha]
+name=Rocky Linux 10 - HighAvailability
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=HighAvailability-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/HighAvailability/$basearch/os/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-extras]
+name=Rocky Linux 10 - Extras
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=extras-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/extras/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-rt]
+name=Rocky Linux 10 - RT
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=RT-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/RT/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-nfv]
+name=Rocky Linux 10 - NFV
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=NFV-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/NFV/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-sap]
+name=Rocky Linux 10 - SAP
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=SAP-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/SAP/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10
+
+[rocky10-saphana]
+name=Rocky Linux 10 - SAPHANA
+#mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=SAPHANA-10
+baseurl=https://dl.rockylinux.org/stg/rocky/latest-10/SAPHANA/$basearch/os/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/leapp/repos.d/system_upgrade/common/files/rpm-gpg/10/RPM-GPG-KEY-Rocky-10

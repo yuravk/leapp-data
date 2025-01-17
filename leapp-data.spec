@@ -46,13 +46,16 @@
 %if "%{dist_name}" == "centos"
 %define gpg_key RPM-GPG-KEY-centosofficial-SHA256 RPM-GPG-KEY-CentOS-SIG-Extras-SHA512
 %endif
+%if "%{dist_name}" == "rocky"
+%define gpg_key RPM-GPG-KEY-Rocky-10
+%endif
 %endif
 
 %bcond_without check
 
 Name:		leapp-data-%{dist_name}
 Version:	0.6
-Release:	2%{?dist}.%{pes_events_build_date}
+Release:	3%{?dist}.%{pes_events_build_date}
 Summary:	data for migrating tool
 Group:		Applications/Databases
 License:	ASL 2.0
@@ -177,6 +180,9 @@ python3 tests/check_debranding.py %{buildroot}%{_sysconfdir}/leapp/files/pes-eve
 
 
 %changelog
+* Fri Jan 17 2025 Yuriy Kohut <ykohut@almalinux.org> - 0.6-3.20241127
+- ELevate to Rocky Linux 10
+
 * Wed Jan 15 2025 Yuriy Kohut <ykohut@almalinux.org> - 0.6-2.20241127
 - ELevate to CentOS Stream release 10
 

@@ -21,6 +21,7 @@ os_repos["rocky8"]="rocky9-appstream rocky9-crb rocky9-baseos"
 
 os_repos["almalinux9"]="almalinux10-appstream almalinux10-crb almalinux10-baseos"
 os_repos["centos9"]="centos10-appstream centos10-crb centos10-baseos"
+os_repos["rocky9"]="rocky10-appstream rocky10-crb rocky10-baseos"
 
 declare -A os_name
 os_name["almalinux"]="AlmaLinux"
